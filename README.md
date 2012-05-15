@@ -30,7 +30,7 @@ Or install it yourself as:
     end
 
     set :exceptional_options, {
-      key: 'YOUR APP KEY',
+      key: '<YOUR_API_KEY>',
       params_filter: /password/i
     }
 
