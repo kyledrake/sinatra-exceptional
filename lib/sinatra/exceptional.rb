@@ -29,26 +29,28 @@ module Exceptional
       "sinatra"
     end
 
-    def params
-      params = {}
-
+    def filtered_params(params)
+      final_params = {}
       if @opts && @opts[:params_filter]
-        @request.params.each do |key,original_value|
-          params[key] =  key.to_s.match(@opts[:params_filter]) ? FILTERED_TEXT : original_value
+        params.each do |key,original_value|
+          if key.to_s === @opts[:params_filter]
+            final_params[key] = FILTERED_TEXT
+          elsif original_value.respond_to?(:to_hash)
+            final_params[key] = filtered_params(params[key])
+          else
+            final_params[key] = params[key]
+          end
         end
-      else
-        params = @request.params
       end
-      params
+      final_params
     end
 
     def extra_stuff
-
       return {} if @request.nil?
       {
         'request' => {
           'url' => "#{@request.url}",
-          'parameters' => params,
+          'parameters' => filtered_params(@request.params),
           'request_method' => @request.request_method.to_s,
           'remote_ip' => @request.ip,
           'headers' => extract_http_headers(@environment),

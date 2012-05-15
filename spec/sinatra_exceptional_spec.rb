@@ -2,8 +2,9 @@ ENV['RACK_ENV'] = 'production'
 require File.join(File.join(File.expand_path(File.dirname(__FILE__))), '..', 'lib', 'sinatra', 'exceptional')
 require 'rack/test'
 require 'minitest/autorun'
-require 'webmock'
+require 'webmock/minitest'
 require 'json'
+require "sinatra/exceptional"
 
 include Rack::Test::Methods
 include WebMock::API
@@ -11,6 +12,7 @@ include WebMock::API
 def mock_app(&block)
   @app = Sinatra.new PartyHard, &block
 end
+
 
 class PartyHard < Sinatra::Base
   class AndrewWKPartyError < StandardError; end
@@ -52,7 +54,7 @@ describe 'A mock app' do
     last_response.body.must_equal 'HELL YEAH'
   end
 
-  it 'throws an party error like a boss' do
+  it 'throws a party error like a boss' do
     lambda {
       get '/partyfail'
     }.must_raise PartyHard::AndrewWKPartyError
@@ -65,5 +67,31 @@ describe 'A mock app' do
     get '/partyfail'
     last_response.status.must_equal 500
     last_response.errors.must_match /AndrewWKPartyError/
+  end
+end
+
+describe "SinatraExceptionData" do
+  describe "#params" do
+    before :each do
+      @data = Exceptional::SinatraExceptionData.new(nil,nil,nil,{:params_filter => "test"})
+    end
+
+    it "should filter params" do
+      @data.
+        filtered_params({"test" => "hidden","not_test" => "not_hidden"})["test"].
+        must_match Exceptional::SinatraExceptionData::FILTERED_TEXT
+      @data.
+        filtered_params({"test" => "hidden","not_test" => "not_hidden"})["not_test"].
+        must_match "not_hidden"
+    end
+
+    it "should filter nested params" do
+      @data.
+        filtered_params({"a" => {"test" => "hidden"},"not_test" => "not_hidden"})["a"]["test"].
+        must_match Exceptional::SinatraExceptionData::FILTERED_TEXT
+      @data.
+        filtered_params({"a" => {"test" => "hidden"},"not_test" => "not_hidden"})["not_test"].
+        must_match "not_hidden"
+    end
   end
 end
