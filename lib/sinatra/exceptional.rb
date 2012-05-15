@@ -29,16 +29,20 @@ module Exceptional
       "sinatra"
     end
 
-    def extra_stuff
+    def params
       params = {}
 
       if @opts && @opts[:params_filter]
-        @request.params.each do |k,v|
-          params[k] =  k.to_s.match(@opts[:params_filter]) ? FILTERED_TEXT : v
+        @request.params.each do |key,original_value|
+          params[key] =  key.to_s.match(@opts[:params_filter]) ? FILTERED_TEXT : original_value
         end
       else
         params = @request.params
       end
+      params
+    end
+
+    def extra_stuff
 
       return {} if @request.nil?
       {
